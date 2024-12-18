@@ -1,5 +1,5 @@
 module FeynGen
 
-# Write your package code here.
+include("Topology.jl")
 
 end
