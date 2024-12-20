@@ -24,7 +24,7 @@ Store topology as undirective graph.
 struct Topology
     node_list::Vector{Node}
     adjacency_list::Vector{Vector{Int}}
-    combinatorial_factor::Float16
+    combinatorial_factor::Int
 end
 
 # default construction of Topology
@@ -195,63 +195,91 @@ function create_topology(num_external::Int, num_loop::Int; max_degree::Int=3, st
         # main logic to create new topology: add new node on edges or promote nodes to higer degree
         num_node = getnodenumber(operating_topology)
         combinatorial_factor = operating_topology.combinatorial_factor
-        for i = 1:length(operating_topology.adjacency_list) # iterate over each edge of operating_topology
-            # using deepcopy() to avoid changing the original node_list and adjacency_list 
-            current_node_list = deepcopy(operating_topology.node_list)
-            current_adjacency_list = deepcopy(operating_topology.adjacency_list)
-            # pop out the currently iterating edge
-            pop_out_edge = popat!(current_adjacency_list, i)
-            # add new nodes
-            push!(current_node_list, Node(num_node + 1, 3))
-            push!(current_node_list, Node(num_node + 2, 1))
-            # create two new edge connecting to two nodes of pop-out edge (internal edges)
-            push!(current_adjacency_list, [pop_out_edge[1], num_node + 1])
-            push!(current_adjacency_list, [pop_out_edge[2], num_node + 1])
-            # create new external edges
-            push!(current_adjacency_list, [num_node + 1, num_node + 2])
+        @inbounds for i = 1:length(operating_topology.adjacency_list) # iterate over each edge of operating_topology
             # push new topology to topologies
-            push!(topologies, Topology(current_node_list, current_adjacency_list, combinatorial_factor))
+            push!(topologies, _ct_add(operating_topology, i, num_node, combinatorial_factor))
         end  # end iteration over edges
-        for node in operating_topology.node_list # promote nodes
+        @inbounds for node in operating_topology.node_list # promote nodes
             if (!isexternal(node)) && (node.degree < max_degree)
                 # promote node that neither is external nor with degree bigger that max_degree
-                current_node_list = deepcopy(operating_topology.node_list)
-                current_adjacency_list = deepcopy(operating_topology.adjacency_list)
-                push!(current_node_list, Node(num_node + 1, 1))
-                push!(current_node_list, Node(node.id, node.degree + 1))
-                filter!(x -> x != node, current_node_list)
-                push!(current_adjacency_list, [node.id, num_node + 1])
-                # add new topology
-                push!(topologies, Topology(current_node_list, current_adjacency_list, combinatorial_factor))
+                push!(topologies, _ct_promote(operating_topology, node, num_node, combinatorial_factor))
             end
         end # end iteration over nodes
     end # end recursion
     # examine equvialent topology and sum the combinatorial_factor 
-    #duplicate_dict = Dict{UInt, Int}()# define an empty Dict
-    output_topologies = Vector{Topology}()
+    return _sum(topologies)
+end
+
+function _ct_add(operating_topology::Topology, edge_index::Int, num_node::Int, combinatorial_factor::Int)
+    # using deepcopy() to avoid changing the original node_list and adjacency_list 
+    current_node_list = deepcopy(operating_topology.node_list)
+    current_adjacency_list = deepcopy(operating_topology.adjacency_list)
+    # pop out the currently iterating edge
+    pop_out_edge = popat!(current_adjacency_list, edge_index)
+    # add new nodes
+    push!(current_node_list, Node(num_node + 1, 3))
+    push!(current_node_list, Node(num_node + 2, 1))
+    # create two new edge connecting to two nodes of pop-out edge (internal edges)
+    push!(current_adjacency_list, [pop_out_edge[1], num_node + 1])
+    push!(current_adjacency_list, [pop_out_edge[2], num_node + 1])
+    # create new external edges
+    push!(current_adjacency_list, [num_node + 1, num_node + 2])
+
+    return Topology(current_node_list, current_adjacency_list, combinatorial_factor)
+end
+
+function _ct_promote(operating_topology::Topology, node::Node, num_node::Int, combinatorial_factor::Int)
+    current_node_list = deepcopy(operating_topology.node_list)
+    current_adjacency_list = deepcopy(operating_topology.adjacency_list)
+    push!(current_node_list, Node(num_node + 1, 1))
+    push!(current_node_list, Node(node.id, node.degree + 1))
+    filter!(x -> x != node, current_node_list)
+    push!(current_adjacency_list, [node.id, num_node + 1])
+
+    return Topology(current_node_list, current_adjacency_list, combinatorial_factor)
+end
+
+function _ct_sum(topologies::Vector{Topology})
+    output_topologies = deepcopy(topologies)
+    repeated_count = Dict{Int, Int}()
+    repeated_hash = Dict{Int, UInt}()
     hash_list = [hash(x) for x in topologies]
+    hash_list_sorted = sort(hash_list)
     sort_p = sortperm(hash_list)
-    for hash_code in hash_list
-        if hash_code == hash(nothing)
-            continue
+    now = hash_list_sorted[1]
+    count = 0
+    @inbounds for i in 1:length(hash_list)
+        if hash_list_sorted[i] != now
+            if count > 1
+                repeated_count[i] = count
+                repeated_hash[i] = now
+            end
+            now = hash_list_sorted[i]
+            count = 1
+        else 
+            count += 1
         end
-        lowup = searchsorted(sort(hash_list, alg=QuickSort), hash_code)
-        top_id = sort_p[lowup[1]]
-        if length(lowup) == 1
-            push!(output_topologies, topologies[top_id])
-        else
-            num = lowup[2] - lowup[1] + 1
-            new_topology = Topology(
+    end
+    if count > 1
+        repeated_count[length(hash_list)] = count
+        repeated_hash[length(hash_list)] = now
+    end
+    new_topologies = Vector{Topology}()
+    @inbounds for (id, num) in repeated_count
+        top_id = sort_p[id]
+        push!(new_topologies, 
+            Topology(
                 topologies[top_id].node_list,
                 topologies[top_id].adjacency_list,
                 topologies[top_id].combinatorial_factor / num
             )
-            replace!(hash_list, hash_code => hash(nothing))
-            push!(output_topologies, new_topology)
-        end
+        )
     end
+    filter!(x -> (hash(x) ∉ values(repeated_hash)), output_topologies)
+    append!(output_topologies, new_topologies)
     return output_topologies
 end
+
 
 """ 
     display_topology(topology::Topology)

@@ -21,16 +21,17 @@ end
     #@test length(FeynGen.create_topology(4, 0)) == 3
     #@test length(FeynGen.create_topology(5, 0)) == 15
     #@test length(FeynGen.create_topology(6, 0)) == 105
-    @test length(FeynGen.create_topology(7, 0)) == 945
+    #@test length(FeynGen.create_topology(7, 0)) == 945
     #@test length(FeynGen.create_topology(8, 0)) == 10395
-    #@test length(FeynGen.create_topology(9, 0)) == 135135
+    @test length(FeynGen.create_topology(9, 0)) == 135135
 end
 
 @testitem "Topology.create_topology(num_loop = 0, max_degree = 4)" begin
     # results from FeynArts
-    #@test length(FeynGen.create_topology(6, 0; max_degree = 4)) == 220
+    @test length(FeynGen.create_topology(5, 0, max_degree = 4)) == 25
+    @test length(FeynGen.create_topology(6, 0; max_degree = 4)) == 220
     @test length(FeynGen.create_topology(7, 0; max_degree = 4)) == 2485
-    #@test length(FeynGen.create_topology(8, 0; max_degree = 4)) == 34300
+    @test length(FeynGen.create_topology(8, 0; max_degree = 4)) == 34300
 end 
 
 @testitem "Topology.create_topology(num_loop = 1, max_degree = 3)" begin
@@ -44,7 +45,9 @@ end
 @testitem "Topology.create_topology(num_loop = 1, max_degree = 4)" begin
     # results from FeynArts
     #@test length(FeynGen.create_topology(4, 1; max_degree = 4)) == 99
-    @time FeynGen.create_topology(6, 1; max_degree = 4)
+    #@test length(FeynGen.create_topology(5, 1; max_degree = 4)) == 947
+    @test length(FeynGen.create_topology(6, 1; max_degree = 4)) == 11460
+    #@test length(FeynGen.create_topology(7, 1; max_degree = 4)) == 167660
     #@test length(FeynGen.create_topology(6, 1, 4)) == 11460
 end 
 
