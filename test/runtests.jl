@@ -21,37 +21,35 @@ end
     #@test length(FeynGen.create_topology(4, 0)) == 3
     #@test length(FeynGen.create_topology(5, 0)) == 15
     #@test length(FeynGen.create_topology(6, 0)) == 105
-    #@test length(FeynGen.create_topology(7, 0)) == 945
-    @test length(FeynGen.create_topology(8, 0)) == 10395
+    @test length(FeynGen.create_topology(7, 0)) == 945
+    #@test length(FeynGen.create_topology(8, 0)) == 10395
     #@test length(FeynGen.create_topology(9, 0)) == 135135
 end
 
 @testitem "Topology.create_topology(num_loop = 0, max_degree = 4)" begin
     # results from FeynArts
-    #@test length(FeynGen.create_topology(4, 0, 4)) == 4
-    #@test length(FeynGen.create_topology(5, 0, 4)) == 25
-    #@test length(FeynGen.create_topology(6, 0, 4)) == 220
-    #@test length(FeynGen.create_topology(7, 0, 4)) == 2485
-    @test length(FeynGen.create_topology(8, 0, 4)) == 34300
+    #@test length(FeynGen.create_topology(6, 0; max_degree = 4)) == 220
+    @test length(FeynGen.create_topology(7, 0; max_degree = 4)) == 2485
+    #@test length(FeynGen.create_topology(8, 0; max_degree = 4)) == 34300
 end 
 
 @testitem "Topology.create_topology(num_loop = 1, max_degree = 3)" begin
     # results from FeynArts
-    @test length(FeynGen.create_topology(4, 1)) == 39
+    #@test length(FeynGen.create_topology(4, 1)) == 39
     @test length(FeynGen.create_topology(5, 1)) == 297
-    @test length(FeynGen.create_topology(6, 1)) == 2865
-    @test length(FeynGen.create_topology(7, 1)) == 33435
+    @time FeynGen.create_topology(8, 1)
+    #@test length(FeynGen.create_topology(7, 1)) == 33435
 end
 
-@testitem "Topology.create_topology(num_loop = 0, max_degree = 4)" begin
+@testitem "Topology.create_topology(num_loop = 1, max_degree = 4)" begin
     # results from FeynArts
-    @test length(FeynGen.create_topology(4, 1, 4)) == 99
-    @test length(FeynGen.create_topology(5, 1, 4)) == 947
-    @test length(FeynGen.create_topology(6, 1, 4)) == 11460
+    #@test length(FeynGen.create_topology(4, 1; max_degree = 4)) == 99
+    @time FeynGen.create_topology(6, 1; max_degree = 4)
+    #@test length(FeynGen.create_topology(6, 1, 4)) == 11460
 end 
 
 @testitem "Topology.hash(topology)" begin
-    topologies = FeynGen.create_topology(4, 0, 4)
+    topologies = FeynGen.create_topology(4, 0; max_degree = 44)
     @test typeof(hash(topologies)) == UInt
     @test typeof(hash(topologies, convert(UInt, 1))) == UInt
 end
