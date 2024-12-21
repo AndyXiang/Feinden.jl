@@ -1,5 +1,5 @@
 using FeynGen
-using Test
+using TestItemRunner
 
 
 @testitem "Topology.hash(node)" begin
