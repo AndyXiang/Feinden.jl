@@ -31,10 +31,6 @@ end
 Topology(node_list, adj) = Topology(node_list, adj, 1)
 
 # Global Constants
-"""
-    const START_TOPOLOGIES
-List of `start_topologies` using `num_loop` as key.
-"""
 const START_TOPOLOGIES = Dict( # start_topologies for loop 0, with different max_degree
     0 => [Topology([Node(1, 1), Node(2, 1)], [(1, 2)])],
     1 => [Topology([Node(1, 3), Node(2, 1)], [(1, 1), (1, 2)], 2)]
@@ -173,7 +169,7 @@ end
 # main functions & API
 
 """
-    create_topology(num_external::Int, num_loop::Int ;[max_degree::Int=3, start_tologies::Array{Topology}=nothing])
+    create_topology(num_external::Int, num_loop::Int ;[max_degree::Int=3, start_tologies::Vector{Topology}=nothing])
 Create topologies with given number of external nodes and loops. 
 Degrees fo internal nodes are constraint by `max_degree`.
 Recursion starts with `start_tologies`, whose default value is stored in Consts.START_TOPOLOGIES.
