@@ -58,11 +58,16 @@ end
 end
 
 @testitem "Topology.isequal(topology1, topology2)" begin
-    top1 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [[1,2]], 2)
-    top2 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [[1,2]], 1)
-    top3 = FeynGen.Topology([Node(1, 3), Node(2, 1)], [[1,1], [1,2]], 2)
+    top1 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [(1,2)], 2)
+    top2 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [(1,2)], 1)
+    top3 = FeynGen.Topology([Node(1, 3), Node(2, 1)], [(1,1), (1,2)], 2)
     @test (isequal(top1, top2)) == true
     @test (isequal(top1, top3)) == false
+end
+
+begin
+    using FeynGen
+    FeynGen.create_topology(4,1)
 end
 
 

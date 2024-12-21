@@ -1,6 +1,7 @@
 module FeynGen
 
-export Node, Topology, create_topology, display_topology, hash
+# export from Topology.jl
+export Node, Topology, create_topology, show, hash
 
 
 include("Topology.jl")

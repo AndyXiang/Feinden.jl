@@ -23,12 +23,12 @@ Store topology as undirective graph.
 """
 struct Topology
     node_list::Vector{Node}
-    adjacency_list::Vector{Tuple{Int, Int}}
-    combinatorial_factor::Int
+    adj::Vector{Tuple{Int,Int}}
+    comb_factor::Int
 end
 
 # default construction of Topology
-Topology(node_list, adjacency_list) = Topology(node_list, adjacency_list, 1)
+Topology(node_list, adj) = Topology(node_list, adj, 1)
 
 # Global Constants
 """
@@ -132,34 +132,42 @@ end
     hase(topology::Topology[, h::UInt])
 Return the hash code for `Topology` object. 
 
-Result is `hash(topology.adjacency_list::Vector{Vector{Int}})`.
+Result is `hash(topology.adj::Vector{Vector{Int}})`.
 External nodes are considered to be distinguishable, which leads to different topologies.
 """
 function Base.hash(topology::Topology)
-    return hash(topology.adjacency_list)
+    return hash(topology.adj)
 end
 
 function Base.hash(topology::Topology, h::UInt)
-    return hash(topology.adjacency_list, h)
+    return hash(topology.adj, h)
 end
 
 """
     isequal(topology1::Topology, topology2::Topology)
-Return whether `topology1` and `topology2` are equvialent.
+Return whether `topology1` and `topology2` are equvialent when external nodes are considered as distinguishable.
 
-Two topologies are equvialent when they have same `adjacency_list`.
-The difference of `combinatorial_factor` will be ignored, but a warning is raised.
+Two topologies are equvialent when they have same `adj`.
+The difference of `comb_factor` will be ignored, but a warning is raised.
 """
 function Base.isequal(topology1::Topology, topology2::Topology)
-    if topology1.adjacency_list == topology2.adjacency_list
-        if topology1.combinatorial_factor != topology2.combinatorial_factor
-            println("Warning: isequal() method for topologies is returning true while combinatorial_factors are unequal.")
+    if topology1.adj == topology2.adj
+        if topology1.comb_factor != topology2.comb_factor
+            println("Warning: isequal() method for topologies is returning true while comb_factors are unequal.")
         end
         return true
     else
         return false
     end
 end
+
+#"""
+    #ishomeo(topology1::Topology, topology2::Topology)
+#Return whether `topology1` and `topology2` are equvialent when external nodes are considered as indistinguishable.
+#"""
+#function ishomeo(topology1::Topology, topology2::Topology)
+    #adj1, adj2 = copy(topology1.adj), copy(topology2.adj)
+#end
 
 
 # main functions & API
@@ -187,13 +195,16 @@ function create_topology(num_external::Int, num_loop::Int; max_degree::Int=3, st
         topologies = start_tologies
     end
     while true
+        # topologies is a queue of toplogy
         operating_topology = popfirst!(topologies)
         if countexternal(operating_topology) == num_external
-            push!(topologies, operating_topology)
+            # if the operating_topology has sufficient number of external nodes,
+            # the iteration shall stop. 
+            push!(topologies, operating_topology) # push back the operating_topology
             break
         end
         # main logic to create new topology: add new node on edges or promote node to higer degree
-        @inbounds for i = 1:length(operating_topology.adjacency_list) # iterate over each edge of operating_topology
+        @inbounds for i = 1:length(operating_topology.adj) # iterate over each edge of operating_topology
             # push new topology to topologies
             push!(topologies, _ct_add(i, operating_topology))
         end  # end iteration over edges
@@ -204,44 +215,44 @@ function create_topology(num_external::Int, num_loop::Int; max_degree::Int=3, st
             end
         end # end iteration over nodes
     end # end recursion
-    # examine equvialent topology and sum the combinatorial_factor 
+    # examine equvialent topology and sum the comb_factor 
     return _ct_sum(topologies)
 end
 
 function _ct_add(edge_index::Int, operating_topology::Topology)
-    # using deepcopy() to avoid changing the original node_list and adjacency_list 
+    # using deepcopy() to avoid changing the original node_list and adj 
     current_node_list = copy(operating_topology.node_list)
-    current_adjacency_list = copy(operating_topology.adjacency_list)
+    current_adj = copy(operating_topology.adj)
     num_node = countnode(operating_topology)
     # pop out the currently iterating edge
-    pop_out_edge = popat!(current_adjacency_list, edge_index)
+    pop_out_edge = popat!(current_adj, edge_index)
     # add new nodes
     push!(current_node_list, Node(num_node + 1, 3))
     push!(current_node_list, Node(num_node + 2, 1))
     # create two new edge connecting to two nodes of pop-out edge (internal edges)
-    push!(current_adjacency_list, (pop_out_edge[1], num_node + 1))
-    push!(current_adjacency_list, (pop_out_edge[2], num_node + 1))
+    push!(current_adj, (pop_out_edge[1], num_node + 1))
+    push!(current_adj, (pop_out_edge[2], num_node + 1))
     # create new external edges
-    push!(current_adjacency_list, (num_node + 1, num_node + 2))
+    push!(current_adj, (num_node + 1, num_node + 2))
 
-    return Topology(current_node_list, current_adjacency_list, operating_topology.combinatorial_factor)
+    return Topology(current_node_list, current_adj, operating_topology.comb_factor)
 end
 
 function _ct_promote(node::Node, operating_topology::Topology)
     num_node = countnode(operating_topology)
     current_node_list = copy(operating_topology.node_list)
-    current_adjacency_list = copy(operating_topology.adjacency_list)
+    current_adj = copy(operating_topology.adj)
     push!(current_node_list, Node(num_node + 1, 1))
     push!(current_node_list, Node(node.id, node.degree + 1))
     filter!(x -> x != node, current_node_list)
-    push!(current_adjacency_list, (node.id, num_node + 1))
+    push!(current_adj, (node.id, num_node + 1))
 
-    return Topology(current_node_list, current_adjacency_list, operating_topology.combinatorial_factor)
+    return Topology(current_node_list, current_adj, operating_topology.comb_factor)
 end
 
 function _ct_sum(topologies::Vector{Topology})
     output_topologies = copy(topologies)
-    repeated_count = Dict{Int, Int}()
+    repeated_count = Dict{Int,Int}()
     repeated_hash = Vector{UInt}()
     hash_list = [hash(x) for x in topologies]
     hash_list_sorted = sort(hash_list)
@@ -256,7 +267,7 @@ function _ct_sum(topologies::Vector{Topology})
             end
             now = hash_list_sorted[i]
             count = 1
-        else 
+        else
             count += 1
         end
     end
@@ -267,11 +278,11 @@ function _ct_sum(topologies::Vector{Topology})
     new_topologies = Vector{Topology}()
     @inbounds for (id, num) in repeated_count
         top_id = sort_p[id]
-        push!(new_topologies, 
+        push!(new_topologies,
             Topology(
                 topologies[top_id].node_list,
-                topologies[top_id].adjacency_list,
-                topologies[top_id].combinatorial_factor / num
+                topologies[top_id].adj,
+                topologies[top_id].comb_factor / num
             )
         )
     end
@@ -297,15 +308,28 @@ Topology: 4 External Nodes of 6 Nodes.
     Propagator:      3 -- 5
     External Leg:    5 -- 6
 """
-function display_topology(topology::Topology)
-    print("Topology: $(countexternal(topology)) External Nodes of $(countnode(topology)) Nodes.\n")
-    for edge in topology.adjacency_list
+function Base.show(io::IO, mime::MIME"text/plain", topology::Topology)
+    println(io, "Topology: $(countexternal(topology)) External Nodes of $(countnode(topology)) Nodes.")
+    for edge in topology.adj
         if edge[1] == edge[2]
-            print("\t Self Loop:       $(edge[1]) -- $(edge[2]) \n")
+            println(io, "\t Self Loop:       $(edge[1]) -- $(edge[2])")
         elseif isexternal(edge[1], topology) || isexternal(edge[2], topology)
-            print("\t External Leg:    $(edge[1]) -- $(edge[2]) \n")
+            println(io, "\t External Leg:    $(edge[1]) -- $(edge[2])")
         else
-            print("\t Propagator:      $(edge[1]) -- $(edge[2]) \n")
+            println(io, "\t Propagator:      $(edge[1]) -- $(edge[2])")
+        end
+    end
+end
+
+function Base.show(io::IO, topology::Topology)
+    println(io, "Topology with $(countexternal(topology)) External Nodes of $(countnode(topology)) Nodes.")
+    for edge in topology.adj
+        if edge[1] == edge[2]
+            println(io, "\t Self Loop:       $(edge[1]) -- $(edge[2])")
+        elseif isexternal(edge[1], topology) || isexternal(edge[2], topology)
+            println(io, "\t External Leg:    $(edge[1]) -- $(edge[2])")
+        else
+            println(io, "\t Propagator:      $(edge[1]) -- $(edge[2])")
         end
     end
 end
