@@ -5,12 +5,13 @@ include("Utils.jl")
 
 """ 
     Node
-Basic components of Topology. 
+Basic components of `Topology`. Distinguished by its index in the topology and degree.
 
-# Properties
-`id`: number to identify the node in a `Topology` object.
-
-`degree`: degree of nodes (how many nodes connecting to this nodes). 
+# Example
+```julia-repl 
+julia> Node(1, 3)
+Node(1, 3)
+```
 """
 struct Node
     id::Int
@@ -62,12 +63,19 @@ end
 
 """
     isexternal(id::Int, topology::Topology)
-Return a boolean based on whether it is a external node which is obtained by `getnode(id, topology)`
-
-Logic: external node has degree of 1.
+Return a boolean based on whether it is a external node which is obtained by `getnode(id, topology)`.
 
 # Example 
 ```julia-repl
+julia> top = Topology(
+               [Node(1,3), Node(2,3), Node(3,1), Node(4,1)], 
+               [(1,1), (1,2), (2,3), (2,4)]
+             )
+Topology: 2 External Nodes of 4 Nodes.
+         Self Loop:       1 -- 1
+         Propagator:      1 -- 2
+         External Leg:    2 -- 3
+         External Leg:    2 -- 4
 julia> isexternal(Node(1, 1))
 true
 julia> isexternal(Node(1, 3))
@@ -108,6 +116,8 @@ return node of `topology` with given `id`.
 function getnode(id::Int, topology::Topology)
     return topology.node_list[id]
 end
+
+# methods for Base
 
 """
     hase(node::Node[, h::UInt])
@@ -154,6 +164,77 @@ function Base.isequal(topology1::Topology, topology2::Topology)
         return true
     else
         return false
+    end
+end
+
+""" 
+    Base.show(io::IO, mime::MIME"text/plain", topology::Topology)
+Method for Base.show over topology in the plain form.
+
+# Example 
+julia> show(Topology(
+                [Node(1,3), Node(2,3), Node(3,1), Node(4,1)], 
+                [(1,1), (1,2), (2,3), (2,4)]
+            ))
+Topology with 2 External Nodes of 4 Nodes.
+         Self Loop:       1 -- 1
+         Propagator:      1 -- 2
+         External Leg:    2 -- 3
+         External Leg:    2 -- 4
+"""
+function Base.show(io::IO, mime::MIME"text/plain", topology::Topology)
+    println(io, "Topology with $(countexternal(topology)) External Nodes of $(countnode(topology)) Nodes.")
+    for edge in topology.adj
+        if edge[1] == edge[2]
+            println(io, "\t Self Loop:       $(edge[1]) -- $(edge[2])")
+        elseif isexternal(edge[1], topology) || isexternal(edge[2], topology)
+            println(io, "\t External Leg:    $(edge[1]) -- $(edge[2])")
+        else
+            println(io, "\t Propagator:      $(edge[1]) -- $(edge[2])")
+        end
+    end
+end
+
+
+""" 
+    Base.show(io::IO, topology::Topology)
+Method for Base.show over topology in Julia_specific format.
+
+# Example 
+julia> create_topology(4, 0)
+
+3-element Vector{Topology}:
+ Topology with 4 External Nodes of 6 Nodes.
+         External Leg:    1 -- 3
+         External Leg:    3 -- 4
+         External Leg:    2 -- 5
+         Propagator:      3 -- 5
+         External Leg:    5 -- 6
+
+ Topology with 4 External Nodes of 6 Nodes.
+         External Leg:    1 -- 3
+         External Leg:    2 -- 3
+         Propagator:      3 -- 5
+         External Leg:    4 -- 5
+         External Leg:    5 -- 6
+
+ Topology with 4 External Nodes of 6 Nodes.
+         External Leg:    2 -- 3
+         External Leg:    3 -- 4
+         External Leg:    1 -- 5
+         Propagator:      3 -- 5
+         External Leg:    5 -- 6
+"""
+function Base.show(io::IO, topology::Topology)
+    println(io, "Topology with $(countexternal(topology)) External Nodes of $(countnode(topology)) Nodes.")
+    for edge in topology.adj
+        if edge[1] == edge[2]
+            println(io, "\t Self Loop:       $(edge[1]) -- $(edge[2])")
+        elseif isexternal(edge[1], topology) || isexternal(edge[2], topology)
+            println(io, "\t External Leg:    $(edge[1]) -- $(edge[2])")
+        else
+            println(io, "\t Propagator:      $(edge[1]) -- $(edge[2])")
+        end
     end
 end
 
@@ -288,44 +369,3 @@ function _ct_sum(topologies::Vector{Topology})
     return output_topologies
 end
 
-
-
-""" 
-    display_topology(topology::Topology)
-Display single topology. Basic properties are printed.
-
-# Example 
-julia> display_topology(Topology())
-
-Topology: 4 External Nodes of 6 Nodes.
-    External Leg:    2 -- 3
-    External Leg:    3 -- 4
-    External Leg:    1 -- 5
-    Propagator:      3 -- 5
-    External Leg:    5 -- 6
-"""
-function Base.show(io::IO, mime::MIME"text/plain", topology::Topology)
-    println(io, "Topology: $(countexternal(topology)) External Nodes of $(countnode(topology)) Nodes.")
-    for edge in topology.adj
-        if edge[1] == edge[2]
-            println(io, "\t Self Loop:       $(edge[1]) -- $(edge[2])")
-        elseif isexternal(edge[1], topology) || isexternal(edge[2], topology)
-            println(io, "\t External Leg:    $(edge[1]) -- $(edge[2])")
-        else
-            println(io, "\t Propagator:      $(edge[1]) -- $(edge[2])")
-        end
-    end
-end
-
-function Base.show(io::IO, topology::Topology)
-    println(io, "Topology with $(countexternal(topology)) External Nodes of $(countnode(topology)) Nodes.")
-    for edge in topology.adj
-        if edge[1] == edge[2]
-            println(io, "\t Self Loop:       $(edge[1]) -- $(edge[2])")
-        elseif isexternal(edge[1], topology) || isexternal(edge[2], topology)
-            println(io, "\t External Leg:    $(edge[1]) -- $(edge[2])")
-        else
-            println(io, "\t Propagator:      $(edge[1]) -- $(edge[2])")
-        end
-    end
-end

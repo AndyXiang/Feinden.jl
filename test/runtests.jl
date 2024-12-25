@@ -1,7 +1,7 @@
 using FeynGen
 using TestItemRunner
 
-
+# tests for Topology.jl
 @testitem "Topology.hash(node)" begin
     node = Node(1,1)
     @test hash(node) == hash(node.id, hash(node.degree))
@@ -65,9 +65,27 @@ end
     @test (isequal(top1, top3)) == false
 end
 
-begin
+# tests for Model.jl 
+@testitem "Field" begin
     using FeynGen
-    FeynGen.create_topology(4,1)
+    ScalarField(25)
+    @test typeof(ScalarField()) <: Field
+    @test typeof(SpinorField(11)) == Particle
+    @test typeof(VectorField(24)) == Particle
 end
 
+@testitem "Particle" begin
+    γ = FeynGen.Particle("γ")
+    @test FeynGen.getanti(γ) == γ 
+    e = FeynGen.Particle(11)
+    @test FeynGen.getidabs(FeynGen.getanti(e)) == FeynGen.getid(e)
+end
+
+@testitem "particlelist" begin
+    FeynGen.particlelist()
+end
+
+@testitem "Model" begin
+    sm = FeynGen.Model(Set([FeynGen.ScalarField(), FeynGen.VectorField()]))
+end
 
