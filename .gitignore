@@ -2,3 +2,4 @@
 .DS_Store
 .vscode
 *.mem
+src/models/SM.json
