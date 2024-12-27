@@ -86,6 +86,16 @@ end
 end
 
 @testitem "Model" begin
-    sm = FeynGen.Model(Set([FeynGen.ScalarField(), FeynGen.VectorField()]))
+    using FeynGen
+    save_model("test.json", CURRENT_MODEL)
+end
+
+@testitem "CURRENT_MODEL" begin
+    using FeynGen 
+    #s = ScalarField(1)
+    @test SpinorField(11).name == "e-"
+    @test SpinorField(-11).name == "e+"
+    @test VectorField(22).name == "γ"
+    fieldlist()
 end
 
