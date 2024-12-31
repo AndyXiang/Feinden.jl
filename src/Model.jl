@@ -37,7 +37,7 @@ end
 """
 struct Model
     fields::Vector{Field}
-    couplings::Vector{Interaction}
+    interactions::Vector{Interaction}
     dict::Dict
     desc::Union{String, Nothing}
 end
@@ -70,9 +70,9 @@ end
 
 Model(
     fields::Vector{Field}, 
-    couplings::Vector{Interaction}, 
+    interactions::Vector{Interaction}, 
     dict::Dict
-) = Model(fields, couplings, dict, nothing)
+) = Model(fields, interactions, dict, nothing)
 
 ###########################################################################################
 
@@ -80,7 +80,7 @@ Model(
 
 function load_model(path::String) 
     json_dict = JSON.parsefile(path) # read model file from .json and store in Dict 
-    # official consist of three keys: "fields", "couplings", "dict", "desc" may exist.
+    # official consist of three keys: "fields", "interactions", "dict", "desc" may exist.
     model_dict = Dict(
         "mass" => Dict(), 
         "spin" => Dict(), 
@@ -96,13 +96,13 @@ function load_model(path::String)
             model_dict["name"][field[1]] = field[2]
         end
     end
-    couplings = Vector{Interaction}()
-    for cp in json_dict["couplings"]
-        push!(couplings, Interaction(cp[1], cp[2]))
+    interactions = Vector{Interaction}()
+    for cp in json_dict["interactions"]
+        push!(interactions, Interaction(cp[1], cp[2]))
     end
     haskey(json_dict, "desc") ? 
-        (return Model(fields, couplings, model_dict, json_dict["desc"])) : 
-        (return Model(fields, couplings, model_dict))
+        (return Model(fields, interactions, model_dict, json_dict["desc"])) : 
+        (return Model(fields, interactions, model_dict))
 end
 
 function load_model!(path::String, model::Model) 
@@ -112,7 +112,7 @@ end
 function save_model(path::String, model::Model)
     json_dict = Dict(
         "field" => Dict(), 
-        "couplings" => Vector(), 
+        "interactions" => Vector(), 
         "mass" => Dict()
     )
     if !(isnothing(model.desc))
@@ -128,8 +128,8 @@ function save_model(path::String, model::Model)
         end
         json_dict["mass"][field.name] = model.dict["mass"][field.id] 
     end
-    for cp in model.couplings
-        push!(json_dict["couplings"], [cp.ids, cp.symbol])
+    for cp in model.interactions
+        push!(json_dict["interactions"], [cp.ids, cp.symbol])
     end
     open(path, "w") do f 
         write(f, JSON.json(json_dict, 4))
