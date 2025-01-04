@@ -91,11 +91,39 @@ end
 end
 
 @testitem "CURRENT_MODEL" begin
-    using FeynGen 
-    #s = ScalarField(1)
-    @test SpinorField(11).name == "e-"
-    @test SpinorField(-11).name == "e+"
-    @test VectorField(22).name == "γ"
-    fieldlist()
+    FeynGen.fieldlist()
+end
+
+@testitem "hash(Field)" begin
+    using FeynGen
+    println(hash(getparticle(0)))
+end
+
+@testitem "hash(Model)" begin
+    using FeynGen
+    println(hash(CURRENT_MODEL))
+end
+
+@testitem "_convert_topology" begin
+    using FeynGen
+    topology = Topology(
+        [Node(1, 1), Node(2, 1), Node(3, 3), Node(4, 3), Node(5, 1), Node(6, 1)], 
+        [(1,3), (2, 3), (3,4), (4,5), (4,6)]
+    )
+    diagram = FeynGen._convert_topology(topology)
+    print(diagram.verli)
+end
+
+@testitem "_insert_external" begin
+    using FeynGen
+    topology = Topology(
+        [Node(1, 1), Node(2, 1), Node(3, 3), Node(4, 3), Node(5, 1), Node(6, 1)], 
+        [(1,3), (2, 3), (3,4), (4,5), (4,6)]
+    )
+    diagram = FeynGen._convert_topology(topology)
+    println(getparticle(1))
+    FeynGen._insert_external!(diagram, [getparticle(1),getparticle(1),getparticle(1),getparticle(1)])
+    println(diagram.verli)
+    println(diagram.propli)
 end
 
