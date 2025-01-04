@@ -1,5 +1,3 @@
-using Base # methods for hash, isequal are provided.
-
 # Basic Struct 
 
 """ 
@@ -31,9 +29,23 @@ end
 Topology(node_list, adj) = Topology(node_list, adj, 1)
 
 # Global Constants
-const START_TOPOLOGIES = Dict( # start_topologies for loop 0, with different max_degree
+const START_TOPOLOGIES = Dict( # start topologies for loop 0, with different max_degree
     0 => [Topology([Node(1, 1), Node(2, 1)], [(1, 2)])],
-    1 => [Topology([Node(1, 3), Node(2, 1)], [(1, 1), (1, 2)], 2)]
+    1 => [Topology([Node(1, 3), Node(2, 1)], [(1, 1), (1, 2)], 2)],
+    2 => [
+        Topology([Node(1, 3), Node(2, 3)], [(1, 2), (1, 2), (1, 2)], 12),
+        Topology([Node(1, 4)], [(1, 1), (1, 1)], 8),
+        Topology([Node(1, 3), Node(2, 3)], [(1, 1), (1, 2), (2, 2)], 8)
+    ]
+)
+
+const IRD_START_TOPOLOGIES = Dict( # start tologies for irreducible diagrams
+    0 => START_TOPOLOGIES[0],
+    1 => START_TOPOLOGIES[1],
+    2 => [
+        Topology([Node(1, 3), Node(2, 3)], [(1, 2), (1, 2), (1, 2)], 12),
+        Topology([Node(1, 4)], [(1, 1), (1, 1)], 8)
+    ]
 )
 
 # Utils
@@ -119,10 +131,10 @@ end
 # methods for Base
 
 """
-    hase(node::Node[, h::UInt])
+    hash(node::Node[, h::UInt])
 Return the hash code for `Node` object. 
 
-The result is `hase(node.id, hash(node.degree))` with implemented method of `hase(Int, UInt)`. 
+The result is `hash(node.id, hash(node.degree))` with implemented method of `hash(Int, UInt)`. 
 The hash code is thus the same for node with same id and degree. 
 """
 function Base.hash(node::Node)
@@ -134,7 +146,7 @@ function Base.hash(node::Node, h::UInt)
 end
 
 """
-    hase(topology::Topology[, h::UInt])
+    hash(topology::Topology[, h::UInt])
 Return the hash code for `Topology` object. 
 
 Result is `hash(topology.adj::Vector{Vector{Int}})`.
@@ -294,6 +306,17 @@ function create_topology(num_external::Int, num_loop::Int; max_degree::Int=3, st
     # examine equvialent topology and sum the comb_factor 
     return _ct_sum(topologies)
 end
+
+create_topology_ird(
+    num_external::Int, 
+    num_loop::Int; 
+    max_degree::Int=3
+) = create_topology(
+    num_external, 
+    num_loop, 
+    max_degree = max_degree, 
+    start_tologies = IRD_START_TOPOLOGIES[num_loop]
+)
 
 function _ct_add(edge_index::Int, operating_topology::Topology)
     # using deepcopy() to avoid changing the original node_list and adj 
