@@ -169,6 +169,14 @@ getparticle(name::String,
 getname(field::Field) = isnothing(field.name) ? println("Name not assigned") : field.name
 getname(id::Int, model::Model = CURRENT_MODEL) = getname(getparticle(id, model))
 
+function getanti(id::Int, model::Model = CURRENT_MODEL)
+    if getparticle(id, model) isa SpinorField
+        return -id 
+    else 
+        return id 
+    end
+end
+
 function fieldlist(model::Model = CURRENT_MODEL)
     println("id\t\t", "field type\t\t", "name")
     for field_arr in values(model.field)
