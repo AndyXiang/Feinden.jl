@@ -58,31 +58,17 @@ end
 end
 
 @testitem "Topology.isequal(topology1, topology2)" begin
-    top1 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [(1,2)], 2)
-    top2 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [(1,2)], 1)
-    top3 = FeynGen.Topology([Node(1, 3), Node(2, 1)], [(1,1), (1,2)], 2)
+    top1 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [(1,2)])
+    top2 = FeynGen.Topology([Node(1, 1), Node(2, 1)], [(1,2)])
+    top3 = FeynGen.Topology([Node(1, 3), Node(2, 1)], [(1,1), (1,2)])
     @test (isequal(top1, top2)) == true
     @test (isequal(top1, top3)) == false
 end
 
 # tests for Model.jl 
-@testitem "Field" begin
-    using FeynGen
-    ScalarField(25)
-    @test typeof(ScalarField()) <: Field
-    @test typeof(SpinorField(11)) == Particle
-    @test typeof(VectorField(24)) == Particle
-end
 
-@testitem "Particle" begin
-    γ = FeynGen.Particle("γ")
-    @test FeynGen.getanti(γ) == γ 
-    e = FeynGen.Particle(11)
-    @test FeynGen.getidabs(FeynGen.getanti(e)) == FeynGen.getid(e)
-end
-
-@testitem "particlelist" begin
-    FeynGen.particlelist()
+@testitem "fieldlist" begin
+    FeynGen.fieldlist()
 end
 
 @testitem "Model" begin
@@ -121,9 +107,40 @@ end
         [(1,3), (2, 3), (3,4), (4,5), (4,6)]
     )
     diagram = FeynGen._convert_topology(topology)
-    println(getparticle(1))
-    FeynGen._insert_external!(diagram, [getparticle(1),getparticle(1),getparticle(1),getparticle(1)])
+    FeynGen._insert_external!(diagram, [1,-1]=>[1,-1])
     println(diagram.verli)
-    println(diagram.propli)
+end
+
+@testitem "deleteat" begin
+    using FeynGen
+    a = [1,2,3]
+    FeynGen.deleteat(a, 1)
+    @test a == [1,2,3]
+end
+
+@testitem "insert_field()" begin
+    using FeynGen
+    @time @test length(insert_field(create_topology(7, 0), [1,-1,1,-1]=>[2,-2,0])) == 84
+    @time print(length(insert_field(create_topology(8, 0), [1,-1,1,-1]=>[2,-2,2,-2])))
+end
+
+@testitem "insert_field()" begin
+    using FeynGen
+    @test length(insert_field(create_topology(4, 1), [1,-1]=>[2,-2])) == 13
+    @test length(insert_field(create_topology(5, 1), [1,-1,0]=>[2,-2])) == 77
+end
+
+@testitem "hash(diagram)" begin
+    using FeynGen
+    dias = insert_field(create_topology(2, 1), [1]=>[1])
+    for dia in dias
+        println(dia)
+    end
+end
+
+@testitem "permutations" begin
+    using FeynGen
+    arr = [1,1,0]
+    println(unique(FeynGen.permutations(arr)))
 end
 
