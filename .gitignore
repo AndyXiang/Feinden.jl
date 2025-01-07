@@ -3,3 +3,6 @@
 .vscode
 *.mem
 src/models/SM.json
+note.md
+.gitignore
+test/test_diagram/

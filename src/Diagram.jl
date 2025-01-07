@@ -24,10 +24,15 @@ function insert_field(
     while true
         inserting_diagram = popfirst!(diagram_arr)
         # find one not-inserted propagator of inserting_diagram
-        inserting_vertex_id = findlast(
-            x->ismissing(sum(sum(x.connection))), 
-            inserting_diagram.verli
-        )
+        inserting_vertex_id = nothing
+        for i in eachindex(inserting_diagram.verli)
+            vertex = inserting_diagram.verli[i]
+            current_insertion = [vertex.connection[j][2] for j = 1:vertex.degree]
+            if any(ismissing, current_insertion) && any(!ismissing, current_insertion)
+                inserting_vertex_id = i 
+                break
+            end
+        end
         if isnothing(inserting_vertex_id)
             push!(output_diagram, inserting_diagram)
             if isempty(diagram_arr) # stop iteration when all diagrams are completely inserted
@@ -84,7 +89,10 @@ function _convert_topology(topology::Topology) # create start diagram from topol
                     push!(vertex.connection, [vertex.id, missing])
                     push!(vertex.connection, [vertex.id, missing])
                 else
-                    push!(vertex.connection, [get_another_element(edge, vertex.id), missing])
+                    push!(
+                        vertex.connection, 
+                        [get_another_element(edge, vertex.id), missing]
+                    )
                 end
             end
         end
@@ -147,9 +155,10 @@ function _insert_internal(inserting_diagram::Diagram, inserting_vertex_id::Int, 
             for coni in connect_vertex.connection
                 if (coni[1] == inserting_vertex_id) && ismissing(coni[2])
                     coni[2] = getanti(insertion[i])
+                    break
                 end
             end
-            if (con[1] == inserting_vertex_id) && (getanti(insertion[i]) != insertion[i]) # self-loop 
+            if (con[1] == inserting_vertex_id) && (getanti(insertion[i]) != insertion[i]) # fermion self-loop 
                 push!(selfloop_record, hash(Set(insertion)))
             end
             i += 1
@@ -202,50 +211,27 @@ function _check_insertion(diagram::Diagram, interactions::Vector{Interaction})
     return true
 end
 
-# function _check_selfloop(diagram::Diagram)
-#     selfloop = []
-#     for prop in diagram.propli
-#         if prop.edge[1] == prop.edge[2]
-#             push!(selfloop, (prop.id, abs(prop.field_id)))
-#         end 
-#     end
-#     return selfloop
-# end
-
 function _remove_duplicate!(diagram_arr::Vector{Diagram})
-    duplicate_dict = Dict{UInt, Int}()
-    delete_arr = [] 
+    duplicate_dict = Dict{UInt, Vector{Int}}()
     for i in eachindex(diagram_arr)
         h = hash(diagram_arr[i])
         if haskey(duplicate_dict, h)
-            try
-                diagram_arr[i].comb_factor /= 2
-            catch e 
-                if e isa InexactError
-                    println(diagram_arr[i])
-                    println(diagram_arr[duplicate_dict[h]])
-                    throw(error("one error"))
-                end 
-            end
-            push!(delete_arr, duplicate_dict[h])
+            push!(duplicate_dict[h], i)
         else 
-            duplicate_dict[h] = i
+            duplicate_dict[h] = [i]
+        end
+    end
+    delete_arr = []
+    for duplicate in values(duplicate_dict)
+        if length(duplicate) == 1
+            continue
+        else 
+            diagram_arr[popfirst!(duplicate)].comb_factor /= length(duplicate)
+            # julia compute the right expersion first
+            append!(delete_arr, duplicate)
         end
     end
     deleteat!(diagram_arr, sort!(delete_arr))
-    # delete_arr = [] 
-    # selfloop_record = []
-    # for i in eachindex(diagram_arr)
-    #     selfloop = _check_selfloop(diagram_arr[i])
-    #     if !isempty(selfloop)
-    #         if selfloop in selfloop_record
-    #             push!(delete_arr, i)
-    #         else 
-    #             push!(selfloop_record, selfloop)
-    #         end
-    #     end
-    # end
-    # deleteat!(diagram_arr, sort!(delete_arr))
 end
 
 # function Base.show(io::IO, diagram::Diagram)

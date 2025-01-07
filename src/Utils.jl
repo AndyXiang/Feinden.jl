@@ -29,3 +29,31 @@ function permutations(arr::Vector)
 
     return result
 end
+
+function find_first_partial_missing(array::Vector)
+    for i in eachindex(array)
+        has_missing = any(ismissing, array[i])
+        not_all_missing = any(!ismissing, array[i])
+        if has_missing && not_all_missing
+            return i
+        end
+    end
+    return nothing
+end
+
+function find_duplicates(array::Vector{Int})
+    element_count = Dict{Any, Vector{Int}}()
+    for i in eachindex(array)
+        if haskey(element_count, array[i])
+            push!(element_count[array[i]], i) 
+        else
+            element_count[array[i]] = [i]
+        end
+    end
+    for key in keys(element_count)
+        if !(length(element_count[key]) > 1)
+            delete!(element_count, key)
+        end
+    end
+    return element_count
+end

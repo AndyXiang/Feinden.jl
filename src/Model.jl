@@ -166,6 +166,8 @@ getparticle(name::String,
     model::Model = CURRENT_MODEL
 ) = getparticle(getid(name, model), model)
 
+getparticletype(id::Int, model::Model = CURRENT_MODEL) = typeof(getparticle(id, model))
+
 getname(field::Field) = isnothing(field.name) ? println("Name not assigned") : field.name
 getname(id::Int, model::Model = CURRENT_MODEL) = getname(getparticle(id, model))
 

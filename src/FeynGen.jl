@@ -16,10 +16,14 @@ export CURRENT_MODEL
 export Diagram, Vertex
 export insert_field, show
 
+# export from ToTikZ.jl 
+export generate_tikz
+
 include("Utils.jl")
 include("Topology.jl")
 include("Model.jl")
 include("Diagram.jl")
+include("ToTikZ.jl")
 
 
 CURRENT_MODEL = load_model(joinpath(@__DIR__, "models/QED.json"))
