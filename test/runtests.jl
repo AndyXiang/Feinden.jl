@@ -126,8 +126,7 @@ end
 
 @testitem "insert_field()" begin
     using FeynGen
-    println(insert_field(create_topology(4, 1), [1,-1]=>[2,-2]))
-    #@test length(insert_field(create_topology(5, 1), [1,-1,0]=>[2,-2])) == 77
+    generate_tikz(insert_field(create_topology(4, 1), [1, -1]=>[2, -2]), "test_diagram/")
 end
 
 @testitem "hash(diagram)" begin

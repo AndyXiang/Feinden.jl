@@ -1,9 +1,10 @@
 mutable struct Vertex
-    id::Int 
-    degree::Int 
-    connection::Vector{Vector{Union{Int, Missing}}}
+    id::Int
+    degree::Int
+    connection::Vector{Vector{Union{Int,Missing}}}
 end
-Vertex(node::Node) = Vertex(node.id, node.degree, Vector{Vector{Union{Int, Missing}}}())
+Vertex(node::Node) = Vertex(node.id, node.degree, Vector{Vector{Union{Int,Missing}}}())
+
 
 mutable struct Diagram
     verli::Vector{Vertex} # list of vertex
@@ -11,11 +12,10 @@ mutable struct Diagram
 end
 
 # Main API
-
 function insert_field(
-    topology::Topology, 
-    particles_id::Pair{Vector{Int}, Vector{Int}}, 
-    model::Model = CURRENT_MODEL
+    topology::Topology,
+    particles_id::Pair{Vector{Int},Vector{Int}},
+    model::Model=CURRENT_MODEL
 )
     diagram = _convert_topology(topology)
     # insert external fields 
@@ -29,32 +29,32 @@ function insert_field(
             vertex = inserting_diagram.verli[i]
             current_insertion = [vertex.connection[j][2] for j = 1:vertex.degree]
             if any(ismissing, current_insertion) && any(!ismissing, current_insertion)
-                inserting_vertex_id = i 
+                inserting_vertex_id = i
                 break
             end
         end
         if isnothing(inserting_vertex_id)
             push!(output_diagram, inserting_diagram)
             if isempty(diagram_arr) # stop iteration when all diagrams are completely inserted
-                break 
+                break
             end
             continue
         end
         # iterate over interaction vertices
         for interaction in model.interaction
             new_diagrams = _insert_internal(
-                inserting_diagram, 
-                inserting_vertex_id, 
+                inserting_diagram,
+                inserting_vertex_id,
                 interaction
             )
             if new_diagrams == 0
                 continue
-            else 
+            else
                 append!(diagram_arr, new_diagrams)
             end
         end
         if isempty(diagram_arr) # stop iteration when all diagrams are generated
-            break 
+            break
         end
     end
     incorrect_insertion = []
@@ -63,34 +63,35 @@ function insert_field(
             push!(incorrect_insertion, i)
         end
     end
-    deleteat!(output_diagram, incorrect_insertion)
-    _remove_duplicate!(output_diagram)
+    #deleteat!(output_diagram, incorrect_insertion)
+    #_remove_duplicate!(output_diagram)
     return output_diagram
 end
 
 function insert_field(
-    topologies::Vector{Topology}, 
-    particles_id::Pair{Vector{Int}, Vector{Int}}, 
-    model::Model = CURRENT_MODEL
+    topologies::Vector{Topology},
+    particles_id::Pair{Vector{Int},Vector{Int}},
+    model::Model=CURRENT_MODEL
 )
     output_diagram = Vector{Diagram}()
     for topology in topologies
         append!(output_diagram, insert_field(topology, particles_id, model))
-    end 
+    end
     return output_diagram
 end
 
 function _convert_topology(topology::Topology) # create start diagram from topology
+    # initiate vertices with nodes of topology
     verli = [Vertex(node) for node in topology.node_list]
-    for edge in topology.adj 
-        for vertex in verli 
+    for edge::Tuple{Int,Int} in topology.adj
+        for vertex in verli
             if vertex.id in edge
                 if edge[1] == edge[2] # self-loop
                     push!(vertex.connection, [vertex.id, missing])
                     push!(vertex.connection, [vertex.id, missing])
                 else
                     push!(
-                        vertex.connection, 
+                        vertex.connection,
                         [get_another_element(edge, vertex.id), missing]
                     )
                 end
@@ -100,21 +101,21 @@ function _convert_topology(topology::Topology) # create start diagram from topol
     return Diagram(verli, topology.comb_factor)
 end
 
-function _insert_external!(diagram::Diagram, particles_id::Pair{Vector{Int}, Vector{Int}}) 
+function _insert_external!(diagram::Diagram, particles_id::Pair{Vector{Int},Vector{Int}})
     i = 1
     num_incoming = length(particles_id[1])
     # find all external vertex and store the assgined particle in external_leg_dict
-    for vertex in diagram.verli 
+    for vertex in diagram.verli
         if vertex.degree == 1
             if i <= num_incoming
-                vertex.connection[1][2] = particles_id[1][i] 
+                vertex.connection[1][2] = particles_id[1][i]
                 other_vertex = diagram.verli[vertex.connection[1][1]]
-                connect_pos = findfirst(x->x[1] == vertex.id, other_vertex.connection)
+                connect_pos = findfirst(x -> x[1] == vertex.id, other_vertex.connection)
                 other_vertex.connection[connect_pos][2] = getanti(particles_id[1][i])
-            else 
-                vertex.connection[1][2] = getanti(particles_id[2][i-num_incoming]) 
+            else
+                vertex.connection[1][2] = getanti(particles_id[2][i-num_incoming])
                 other_vertex = diagram.verli[vertex.connection[1][1]]
-                connect_pos = findfirst(x->x[1] == vertex.id, other_vertex.connection)
+                connect_pos = findfirst(x -> x[1] == vertex.id, other_vertex.connection)
                 other_vertex.connection[connect_pos][2] = particles_id[2][i-num_incoming]
             end
             i += 1
@@ -127,9 +128,9 @@ function _insert_internal(inserting_diagram::Diagram, inserting_vertex_id::Int, 
     # following function returning 0 for incorrect interaction, otherwise 
     # returning a nonzero value.
     possible_insertion = _check_interaction(
-        inserting_diagram.verli[inserting_vertex_id], 
+        inserting_diagram.verli[inserting_vertex_id],
         interaction
-    ) 
+    )
     if possible_insertion == 0
         return 0 # no possible insertion -> delete this diagram
     end
@@ -145,7 +146,7 @@ function _insert_internal(inserting_diagram::Diagram, inserting_vertex_id::Int, 
         i = 1
         for con in inserting_vertex.connection
             if i > length(insertion)
-                break 
+                break
             end
             if !ismissing(con[2])
                 continue
@@ -177,12 +178,12 @@ function _check_interaction(vertex::Vertex, interaction::Interaction)
     for connection in vertex.connection
         if ismissing(connection[2])
             continue
-        end 
+        end
         if connection[2] ∉ interaction_comb
             not_correct_interaction_symbol = true
             break
-        else 
-            index_to_remove = findfirst(x->x==connection[2], interaction_comb)
+        else
+            index_to_remove = findfirst(x -> x == connection[2], interaction_comb)
             interaction_comb = deleteat(interaction_comb, index_to_remove)
         end
     end
@@ -199,25 +200,25 @@ end
 
 function _check_insertion(diagram::Diagram, interactions::Vector{Interaction})
     interaction_comb_arr = [sort(interactions[i].comb) for i in eachindex(interactions)]
-    for vertex in diagram.verli 
+    for vertex in diagram.verli
         if vertex.degree == 1
             continue
         end
         vertex_insertion = sort([vertex.connection[i][2] for i = 1:vertex.degree])
         if !(vertex_insertion in interaction_comb_arr)
-            return false 
+            return false
         end
-    end 
+    end
     return true
 end
 
 function _remove_duplicate!(diagram_arr::Vector{Diagram})
-    duplicate_dict = Dict{UInt, Vector{Int}}()
+    duplicate_dict = Dict{UInt,Vector{Int}}()
     for i in eachindex(diagram_arr)
         h = hash(diagram_arr[i])
         if haskey(duplicate_dict, h)
             push!(duplicate_dict[h], i)
-        else 
+        else
             duplicate_dict[h] = [i]
         end
     end
@@ -225,7 +226,7 @@ function _remove_duplicate!(diagram_arr::Vector{Diagram})
     for duplicate in values(duplicate_dict)
         if length(duplicate) == 1
             continue
-        else 
+        else
             diagram_arr[popfirst!(duplicate)].comb_factor /= length(duplicate)
             # julia compute the right expersion first
             append!(delete_arr, duplicate)
@@ -250,19 +251,19 @@ function Base.show(io::IO, vertex::Vertex)
     println(io, "Vertex (degree = $(vertex.degree)): $(vertex.connection)")
 end
 
-function Base.hash(diagram::Diagram, h::UInt = 0x32a7a07f3e7cd1f9)
+function Base.hash(diagram::Diagram, h::UInt=0x32a7a07f3e7cd1f9)
     hash_external = hash("external", h)
     hash_internal = hash("internal", h)
-    for vertex in diagram.verli 
+    for vertex in diagram.verli
         if vertex.degree == 1
             hash_external = hash(
-                hash_external, 
+                hash_external,
                 hash(vertex.id, hash(vertex.connection, hash("external")))
             )
-        else 
+        else
             for con in vertex.connection
                 hash_internal ⊻= hash(con, hash("internal"))
-            end 
+            end
             hash_internal = hash(hash_internal, hash(vertex.id, hash("internal")))
         end
     end
