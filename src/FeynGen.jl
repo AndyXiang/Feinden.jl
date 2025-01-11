@@ -4,7 +4,7 @@ using Base
 
 
 # export from Topology.jl
-export Node, Topology, create_topology, create_topology_ird
+export Topology, create_topologies, create_ird_topologies
 export show, hash, isequal, isexternal, countexternal, countnode, getnode
 
 # export from Model.jl 
